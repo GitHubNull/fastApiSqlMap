@@ -1,0 +1,3 @@
+[submodule "src/third_lib/sqlmap"]
+	path = src/third_lib/sqlmap
+	url = https://github.com/sqlmapproject/sqlmap.git
