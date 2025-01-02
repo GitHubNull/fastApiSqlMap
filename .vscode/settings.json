@@ -1,0 +1,7 @@
+{
+    "python.analysis.typeCheckingMode": "standard",
+    "python.analysis.extraPaths": [
+        "./src/third_lib/fastapi",
+        "./src/third_lib/APScheduler"
+    ]
+}

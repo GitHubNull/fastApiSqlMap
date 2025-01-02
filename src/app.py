@@ -6,7 +6,7 @@ from fastapi.responses import RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 
-from api.chromeService.chromeService import router as chrome_router
+from controller.chromeService.admin import router as chrome_admin_router
 
 app = FastAPI()
 # 将编译好的 Vue 项目静态文件夹（如dist）放置在FastAPI项目中的static文件夹下
@@ -23,7 +23,7 @@ app.add_middleware(
     allow_headers=["*"]    # 允许所有请求头
 )
 
-app.include_router(chrome_router, prefix="/api")
+app.include_router(chrome_admin_router, prefix="/api")
 
 @app.get("/")
 def read_root():

@@ -16,9 +16,8 @@ class Database(object):
         self.cursor = None
 
     def connect(self, who="server"):
-        self.connection = sqlite3.connect(self.database, timeout=3,
-                                          isolation_level=None,
-                                          check_same_thread=False)
+        self.connection = sqlite3.connect(
+            self.database, timeout=3, isolation_level=None, check_same_thread=False)
         self.cursor = self.connection.cursor()
         self.lock = threading.Lock()
         logger.debug("REST-JSON API %s connected to IPC database" % who)
@@ -52,7 +51,28 @@ class Database(object):
         if statement.lstrip().upper().startswith("SELECT"):
             return self.cursor.fetchall()
 
+    def only_execute(self, statement, arguments=None):
+        with self.lock:
+            while True:
+                try:
+                    if arguments:
+                        self.cursor.execute(statement, arguments)
+                    else:
+                        self.cursor.execute(statement)
+                except sqlite3.OperationalError as ex:
+                    if "locked" not in getSafeExString(ex):
+                        raise
+                    else:
+                        time.sleep(1)
+                else:
+                    break
+
+        return self.cursor
+
     def init(self):
-        self.execute("CREATE TABLE IF NOT EXISTS logs(id INTEGER PRIMARY KEY AUTOINCREMENT, taskid INTEGER, time TEXT, level TEXT, message TEXT)")
-        self.execute("CREATE TABLE IF NOT EXISTS data(id INTEGER PRIMARY KEY AUTOINCREMENT, taskid INTEGER, status INTEGER, content_type INTEGER, value TEXT)")
-        self.execute("CREATE TABLE IF NOT EXISTS errors(id INTEGER PRIMARY KEY AUTOINCREMENT, taskid INTEGER, error TEXT)")
+        self.execute(
+            "CREATE TABLE logs(id INTEGER PRIMARY KEY AUTOINCREMENT, taskid INTEGER, datetime TEXT, level TEXT, message TEXT)")
+        self.execute(
+            "CREATE TABLE data(id INTEGER PRIMARY KEY AUTOINCREMENT, taskid INTEGER, status INTEGER, content_type INTEGER, value TEXT)")
+        self.execute(
+            "CREATE TABLE errors(id INTEGER PRIMARY KEY AUTOINCREMENT, taskid INTEGER, error TEXT)")
