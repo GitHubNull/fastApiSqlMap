@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends
-from model.requestModel.TaskRequest import TaskDeleteRequest
+from model.requestModel.TaskRequest import TaskDeleteRequest, TaskFindByBodyKeyWordRequest, TaskFindByHeaderKeyWordRequest, TaskFindByUrlPathRequest
 from service.taskService import TaskService
 from utils.auth import get_current_user
 
@@ -40,4 +40,22 @@ async def stop_task(taskDeleteRequest: TaskDeleteRequest, current_user: dict = D
 @router.post('/task/flush')
 async def stop_flush(current_user: dict = Depends(get_current_user)):
     res = await taskService.flush_task()
+    return res
+
+
+@router.post('/task/findByUrlPath')
+async def find_task_by_urlPath(taskFindByUrlPathRequest: TaskFindByUrlPathRequest, current_user: dict = Depends(get_current_user)):
+    res = await taskService.find_task_by_urlPath(taskFindByUrlPathRequest.urlPath)
+    return res
+
+
+@router.post('/task/findByBodyKeyWord')
+async def find_task_by_bodyKeyWord(taskFindByBodyKeyWordRequest: TaskFindByBodyKeyWordRequest, current_user: dict = Depends(get_current_user)):
+    res = await taskService.find_task_by_bodyKeyWord(taskFindByBodyKeyWordRequest.bodyKeyWord)
+    return res
+
+
+@router.post('/task/findByHeaderKeyWord')
+async def find_task_by_headerKeyWord(taskFindByHeaderKeyWordRequest: TaskFindByHeaderKeyWordRequest, current_user: dict = Depends(get_current_user)):
+    res = await taskService.find_task_by_header_keyword(taskFindByHeaderKeyWordRequest.headerKeyWord)
     return res

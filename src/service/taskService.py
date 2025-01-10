@@ -1,11 +1,15 @@
 import os
 import json
 
+from fastapi import status
+
 from model.DataStore import DataStore
 from model.Database import Database
 from model.Task import Task
 from model.TaskStatus import TaskStatus
 from model.requestModel.TaskRequest import TaskAddRequest
+from model.BaseResponseMsg import BaseResponseMsg
+
 from sqlmap.lib.core.settings import RESTAPI_UNSUPPORTED_OPTIONS
 from third_lib.sqlmap.lib.core.convert import encodeHex
 from third_lib.sqlmap.lib.core.data import logger
@@ -19,23 +23,17 @@ class TaskService(object):
         pass
         # DataStore = DataStore
 
-    async def star_task(self, remote_addr: str, taskAddRequest: TaskAddRequest):
-        options = taskAddRequest.options
-
-        if options is None:
-            logger.error("Options is empty")
-            return {"success": False, "message": "Options is empty"}
-
+    async def star_task(self, remote_addr: str, scanUrl: str, headers: dict, body: str, options: dict):
         # 检查是否有不支持的参数
         for key, value in options:
             if key in RESTAPI_UNSUPPORTED_OPTIONS:
                 logger.warning(f"Unsupported option '{key}' provided to scan_start()")
-                return {"success": False, f"message": f"Unsupported option {key}"}
+                return BaseResponseMsg(data=None, msg=f"Unsupported option {key}", success=False, code=status.HTTP_400_BAD_REQUEST)
 
         taskid = encodeHex(os.urandom(8), binary=False)
 
         with DataStore.tasks_lock:
-            DataStore.tasks[taskid] = Task(taskid, remote_addr)
+            DataStore.tasks[taskid] = Task(taskid, remote_addr, scanUrl, headers, body)
 
             for option, value in options:
                 DataStore.tasks[taskid].set_option(option, value)
@@ -43,18 +41,21 @@ class TaskService(object):
             # Launch sqlmap engine in a separate process
             DataStore.tasks[taskid].status = TaskStatus.Runnable
 
+        # return {"engineid": DataStore.tasks[taskid].engine_get_id(), "taskid": taskid}
+        return BaseResponseMsg(data={"engineid": DataStore.tasks[taskid].engine_get_id(), "taskid": taskid}, msg="", success=True, code=status.HTTP_200_OK)
+
     async def delete_task(self, taskid):
         with DataStore.tasks_lock:
             if taskid not in DataStore.tasks:
                 logger.warning(f"{taskid} Non-existing task ID provided to task_delete()")
-                return {"success": False, "message": "Non-existing task ID"}
+                return BaseResponseMsg(None, msg="Non-existing task ID", success=False, code=400)
             else:
                 status = DataStore.tasks[taskid].status
                 if status == TaskStatus.Running:
                     DataStore.tasks[taskid].engine_kill()
                 DataStore.tasks.pop(taskid)
                 logger.info(f"{taskid} Deleted task")
-                return {"success": True, "message": f"{taskid} Deleted task"}
+                return BaseResponseMsg(data=None, msg=f"{taskid} Deleted task", success=True, code=200)
 
     async def list_task(self):
         tasks = []
@@ -62,7 +63,8 @@ class TaskService(object):
         with DataStore.tasks_lock:
             if DataStore.current_db is None:
                 logger.error("Database connection is not initialized")
-                return {"success": False, "message": "Database connection is not initialized"}
+                # return {"success": False, "message": "Database connection is not initialized"}
+                return BaseResponseMsg(data=None, msg="Database connection is not initialized", success=False, code=500)
 
             for taskid in DataStore.tasks:
                 task = DataStore.tasks[taskid]
@@ -112,13 +114,17 @@ class TaskService(object):
                 }
                 tasks.append(resul_task_item)
 
-        return {"success": True, "message": "success", "tasks": tasks, "tasks_num": len(tasks)}
+        data = {
+            "tasks": tasks,
+            "tasks_num": len(tasks)
+        }
+        return BaseResponseMsg(data=data, msg="success", success=True, code=200)
 
     async def kill_task(self, taskid):
         with DataStore.tasks_lock:
             if taskid not in DataStore.tasks:
                 logger.warning(f"{taskid} Non-existing task ID provided to task_delete()")
-                return {"success": False, "message": "Non-existing task ID"}
+                return BaseResponseMsg(data=None, msg="Non-existing task ID", success=False, code=404)
             else:
                 status = DataStore.tasks[taskid].status
                 if status == TaskStatus.Running:
@@ -126,28 +132,29 @@ class TaskService(object):
 
                 DataStore.tasks[taskid].status = TaskStatus.Terminated
                 logger.info(f"[{taskid}] Deleted task")
-                return {"success": True, "message": f"task {taskid} was Killed"}
+                # return {"success": True, "message": f"task {taskid} was Killed"}
+                return BaseResponseMsg(data=None, msg=f"task {taskid} was Killed", success=True, code=200)
 
     async def stop_task(self, taskid):
         with DataStore.tasks_lock:
             if taskid not in DataStore.tasks:
                 logger.warning(f"[{taskid}] Invalid task ID provided to scan_stop()")
-                return {"success": False, "message": "Invalid task ID"}
+                return BaseResponseMsg(data=None, success=False, msg=f"task {taskid} was not running", code=status.HTTP_200_OK)
             if DataStore.tasks[taskid].status == TaskStatus.Running:
                 DataStore.tasks[taskid].engine_stop()
                 DataStore.tasks[taskid].status = TaskStatus.Blocked
                 logger.debug(f"[{taskid}] Stopped scan")
-                return {"success": True}
+                return BaseResponseMsg(data=None, success=True, msg=f"task {taskid} was stopped", code=status.HTTP_200_OK)
             elif DataStore.tasks[taskid].status in [TaskStatus.New, TaskStatus.Runnable]:
                 DataStore.tasks[taskid].status = TaskStatus.Blocked
                 logger.debug(f"[{taskid}] Stopped scan")
-                return {"success": True}
+                return BaseResponseMsg(data=None, success=True, msg=f"task {taskid} was stopped", code=status.HTTP_200_OK)
             elif DataStore.tasks[taskid].status == TaskStatus.Blocked:
                 logger.warning(f"[{taskid}] task had blocked")
-                return {"success": False, "message": "Task had blocked!"}
+                return BaseResponseMsg(data=None, success=False, msg=f"task {taskid} had blocked", code=status.HTTP_200_OK)
             else:
                 logger.warning(f"[{taskid}] task had terminaled!")
-                return {"success": False, "message": "Task had terminaled!"}
+                return BaseResponseMsg(data=None, success=False, msg=f"task {taskid} had terminaled", code=status.HTTP_200_OK)
 
     async def start_task_with_taskid(self, taskid):
         with DataStore.tasks_lock:
@@ -157,10 +164,10 @@ class TaskService(object):
             if DataStore.tasks[taskid].status == TaskStatus.Blocked:
                 DataStore.tasks[taskid].status = TaskStatus.Runnable
                 logger.debug(f"{taskid} Task status changed to Runnable")
-                return {"success": True, "message": f"Task status set to {TaskStatus.Runnable}"}
+                return BaseResponseMsg(data=None, success=True, msg=f"Task status set to {TaskStatus.Runnable}", code=status.HTTP_200_OK)
             else:
                 logger.debug(f"{taskid} Task status is {DataStore.tasks[taskid].status}")
-                return {"success": False, "message": f"Task status is {DataStore.tasks[taskid].status}"}
+                return BaseResponseMsg(data=None, success=False, msg=f"Task status is {DataStore.tasks[taskid].status}", code=status.HTTP_200_OK)
 
     async def flush_task(self):
         with DataStore.tasks_lock:
@@ -171,4 +178,59 @@ class TaskService(object):
                 del DataStore.tasks[key]
 
         logger.debug("Flushed task pool")
-        return {"success": True}
+        return BaseResponseMsg(data=None, msg="Flushed task pool", success=True, code=status.HTTP_200_OK)
+
+    async def find_task_by_urlPath(self, urlPath: str):
+        res = []
+        with DataStore.tasks_lock:
+            for key in list(DataStore.tasks):
+                task = DataStore.tasks[key]
+                if urlPath in task.scanUrl:
+                    res.append(task)
+
+        data = {
+            "task": res,
+            "count": len(res)
+        }
+        return BaseResponseMsg(data=data, msg="Find task by urlPath", success=True, code=status.HTTP_200_OK)
+
+    async def find_task_by_taskid(self, taskid: str):
+        task = None
+        with DataStore.tasks_lock:
+            if taskid in DataStore.tasks:
+                task = DataStore.tasks[taskid]
+            else:
+                return None
+        data = {
+            "task": task
+        }
+        return BaseResponseMsg(data=data, msg="Find task by taskid", success=True, code=status.HTTP_200_OK)
+
+    async def find_task_by_bodyKeyWord(self, requestBodyKeyWord: str):
+        with DataStore.tasks_lock:
+            res = []
+            for taskid in DataStore.tasks:
+                task = DataStore.tasks[taskid]
+                if requestBodyKeyWord in task.body:
+                    res.append(task)
+        data = {
+            "data": res,
+            "count": len(res),
+        }
+        return BaseResponseMsg(data=data, msg="success", success=True, code=status.HTTP_200_OK)
+
+    async def find_task_by_header_keyword(self, headerKeyWord: str):
+        res = []
+        with DataStore.tasks_lock:
+            for task in DataStore.tasks.values():
+                if task.headers is not None:
+                    for k, v in task.headers.items():
+                        if headerKeyWord in k or headerKeyWord in v:
+                            res.append(task)
+
+        data = {
+            "data": res,
+            "count": len(res)
+        }
+
+        return BaseResponseMsg(data=data, success=True, msg="success", code=status.HTTP_200_OK)

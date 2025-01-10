@@ -17,7 +17,11 @@ from Database import Database
 
 
 class Task(object):
-    def __init__(self, taskid, remote_addr):
+    def __init__(self, taskid, remote_addr, scanUrl, headers, body):
+        self.taskid = taskid
+        self.scanUrl = scanUrl
+        self.headers = headers
+        self.body = body
         self.remote_addr = remote_addr
         self.process = None
         self.output_directory = None
