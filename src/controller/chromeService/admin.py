@@ -1,10 +1,11 @@
 from fastapi import APIRouter, Depends
 from model.requestModel.TaskRequest import TaskDeleteRequest, TaskFindByBodyKeyWordRequest, TaskFindByHeaderKeyWordRequest, TaskFindByUrlPathRequest
-from service.taskService import TaskService
+from service.taskService import taskService
 from utils.auth import get_current_user
+from third_lib.sqlmap.lib.core.data import logger
 
 router = APIRouter(prefix="/chrome/admin")
-taskService = TaskService()
+# taskService = TaskService()
 
 
 @router.post('/task/delete')

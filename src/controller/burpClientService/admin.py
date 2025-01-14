@@ -3,23 +3,22 @@ from fastapi import APIRouter, Depends, Request
 from fastapi import status
 
 from model.BaseResponseMsg import BaseResponseMsg
+from model.DataStore import DataStore
 from model.requestModel.TaskRequest import TaskAddRequest
-from service.taskService import TaskService
+from service.taskService import taskService
 from utils.auth import get_current_user
-import logging
-
+# from config import taskService
+from third_lib.sqlmap.lib.core.data import logger
 
 router = APIRouter(prefix="/burpsuite/admin")
-taskService = TaskService()
-
-logger = logging.getLogger(__name__)
+# taskService = TaskService()
 
 
 @router.post('/task/add')
 async def add_task(taskAddRequest: TaskAddRequest, request: Request, current_user: dict = Depends(get_current_user)):
     try:
         if request.client:
-            task_dict = taskAddRequest.dict()
+            task_dict = taskAddRequest.model_dump()
             if 'options' not in task_dict or task_dict['options'] is None:
                 return BaseResponseMsg(success=False, msg="options is required", code=status.HTTP_400_BAD_REQUEST, data=None)
             remote_ip = request.client.host

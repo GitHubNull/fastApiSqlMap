@@ -1,15 +1,56 @@
-from config import MAX_TASKS_COUNT, MAX_TASKS_COUNT_LOCK
+import os
+from third_lib.sqlmap.lib.core.data import logger
+
+import psutil
+
 from model.DataStore import DataStore
 
 
-def monitor(max_tasks_count=None):
-    local_max_tasks_count = 0
-    with MAX_TASKS_COUNT_LOCK:
-        if max_tasks_count is not None and max_tasks_count > 0 and max_tasks_count > MAX_TASKS_COUNT:
-            local_max_tasks_count = MAX_TASKS_COUNT
-        else:
-            local_max_tasks_count = max_tasks_count
+def get_max_tasks_count():
+    """
+    计算当前计算机逻辑核心数和 CPU 占用率从而决定最大任务数。
+    :return: 最大任务数 (int)
+    """
+    # logger.debug("Calculating max tasks count...")
+    # 获取逻辑核心数
+    logical_cores = os.cpu_count() or 1
 
+    # 获取当前 CPU 平均占用率（过去 1 秒的平均值）
+    cpu_usage = psutil.cpu_percent(interval=1)
+
+    # 根据 CPU 使用率动态调整最大任务数
+    # 如果 CPU 使用率较高，则减少最大任务数
+    # 如果 CPU 使用率较低，则允许更多任务
+    if cpu_usage < 20:
+        max_tasks = logical_cores * 2  # CPU 使用率低，允许更多任务
+    elif cpu_usage < 50:
+        max_tasks = logical_cores  # CPU 使用率中等，使用逻辑核心数
+    else:
+        max_tasks = max(1, logical_cores // 2)  # CPU 使用率高，减少任务数
+
+    return max_tasks
+
+
+def monitor(max_tasks_count=None):
+    # logger.info("monitor...")
+    # logger.debug(f"monitor -> id(DataStore.tasks): {id(DataStore.tasks)}")
+    # logger.debug(f"monitor -> id(DataStore.current_db): {id(DataStore.current_db)}")
+    local_max_tasks_count = 0
+    local_max_tasks_count = 0
+    # 获取逻辑CPU核心数量
+    logical_cores = os.cpu_count() or 1
+    with DataStore.max_tasks_count_lock:
+        if DataStore.first_checkin_monitor:
+            if max_tasks_count is not None and max_tasks_count > 0 and max_tasks_count <= (logical_cores - 1):
+                local_max_tasks_count = max_tasks_count
+            else:
+                local_max_tasks_count = DataStore.max_tasks_count
+        else:
+            local_max_tasks_count = get_max_tasks_count()
+    # Ensure local_max_tasks_count is always an integer
+    local_max_tasks_count = int(local_max_tasks_count)
+
+    DataStore.max_tasks_count = local_max_tasks_count
     with DataStore.tasks_lock:
         runnable_list = []
         running_task_cnt = 0

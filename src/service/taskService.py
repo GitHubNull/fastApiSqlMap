@@ -1,16 +1,16 @@
+import pdb
 import os
-import json
 
 from fastapi import status
 
 from model.DataStore import DataStore
-from model.Database import Database
+# from config import data_store
 from model.Task import Task
 from model.TaskStatus import TaskStatus
 from model.requestModel.TaskRequest import TaskAddRequest
 from model.BaseResponseMsg import BaseResponseMsg
 
-from sqlmap.lib.core.settings import RESTAPI_UNSUPPORTED_OPTIONS
+from third_lib.sqlmap.lib.core.settings import RESTAPI_UNSUPPORTED_OPTIONS
 from third_lib.sqlmap.lib.core.convert import encodeHex
 from third_lib.sqlmap.lib.core.data import logger
 
@@ -19,9 +19,13 @@ class TaskService(object):
     """
     TaskService
     """
+    # def __init__(self, DataStore.current_db, DataStore.tasks_lock, tasks):
     def __init__(self):
         pass
-        # DataStore = DataStore
+        # DataStore.current_db = DataStore.current_db
+        # DataStore.tasks_lock = DataStore.tasks_lock
+        # DataStore.tasks = tasks
+        # self.dataStore = dataStore
 
     async def star_task(self, remote_addr: str, scanUrl: str, headers: dict, body: str, options: dict):
         # 检查是否有不支持的参数
@@ -61,6 +65,8 @@ class TaskService(object):
         tasks = []
         index = 0
         with DataStore.tasks_lock:
+            # pdb.set_trace()
+            logger.info(f"id(DataStore.current_db): {id(DataStore.current_db)}")
             if DataStore.current_db is None:
                 logger.error("Database connection is not initialized")
                 # return {"success": False, "message": "Database connection is not initialized"}
@@ -234,3 +240,6 @@ class TaskService(object):
         }
 
         return BaseResponseMsg(data=data, success=True, msg="success", code=status.HTTP_200_OK)
+
+
+taskService = TaskService()

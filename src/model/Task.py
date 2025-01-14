@@ -13,7 +13,7 @@ from third_lib.sqlmap.lib.core.settings import IS_WIN
 from third_lib.sqlmap.lib.core.data import logger
 
 
-from Database import Database
+from model.Database import Database
 
 
 class Task(object):

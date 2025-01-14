@@ -1,10 +1,12 @@
-import sys
-sys.path.append("third_lib/fastapi")
+# import sys
+# sys.path.append("third_lib/fastapi")
 from typing import Union
 from fastapi import FastAPI
 from fastapi.responses import RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
+
+from third_lib.sqlmap.lib.core.data import logger
 
 from controller.chromeService.admin import router as chrome_admin_router
 
@@ -25,6 +27,8 @@ app.add_middleware(
 
 app.include_router(chrome_admin_router, prefix="/api")
 
+
 @app.get("/")
 def read_root():
+    logger.debug("root")
     return RedirectResponse(url="/static/index.html")
