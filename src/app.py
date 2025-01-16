@@ -27,8 +27,8 @@ app.add_middleware(
     allow_headers=["*"]    # 允许所有请求头
 )
 
-app.include_router(chrome_admin_router, prefix="/api")
-app.include_router(burp_admin_router, prefix="/api")
+app.include_router(chrome_admin_router, prefix="/api", tags=["chrome"])
+app.include_router(burp_admin_router, prefix="/api", tags=["burp"])
 
 
 @app.get("/")

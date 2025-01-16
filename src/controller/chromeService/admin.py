@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends
-from model.requestModel.TaskRequest import TaskDeleteRequest, TaskFindByBodyKeyWordRequest, TaskFindByHeaderKeyWordRequest, TaskFindByUrlPathRequest
+from model.requestModel.TaskRequest import TaskDeleteRequest, TaskFindByBodyKeyWordRequest, TaskFindByHeaderKeyWordRequest, TaskFindByUrlPathRequest, TaskStopRequest
 from service.taskService import taskService
 from utils.auth import get_current_user
 from third_lib.sqlmap.lib.core.data import logger
@@ -26,15 +26,15 @@ async def list_task(current_user: dict = Depends(get_current_user)):
     return res
 
 
-@router.post('/task/start_with_taskid')
+@router.post('/task/startBlocked')
 async def start_start_with_taskid(taskDeleteRequest: TaskDeleteRequest, current_user: dict = Depends(get_current_user)):
     res = await taskService.start_task_with_taskid(taskDeleteRequest.taskid)
     return res
 
 
 @router.post('/task/stop')
-async def stop_task(taskDeleteRequest: TaskDeleteRequest, current_user: dict = Depends(get_current_user)):
-    res = await taskService.stop_task(taskDeleteRequest.taskid)
+async def stop_task(taskStopRequest: TaskStopRequest, current_user: dict = Depends(get_current_user)):
+    res = await taskService.stop_task(taskStopRequest.taskid)
     return res
 
 

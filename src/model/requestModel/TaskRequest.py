@@ -11,6 +11,10 @@ class TaskDeleteRequest(BaseModel):
     taskid: str
 
 
+class TaskStopRequest(BaseModel):
+    taskid: str
+
+
 class TaskUpdateRequest(BaseModel):
     taskid: Annotated[str, Field(min_length=1)]
     options: Annotated[dict, Field(min_length=1)]
