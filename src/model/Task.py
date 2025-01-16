@@ -2,6 +2,7 @@ import tempfile
 import os
 import sys
 
+from model.TaskStatus import TaskStatus
 from third_lib.sqlmap.lib.core.datatype import AttribDict
 from third_lib.sqlmap.lib.core.optiondict import optDict
 from third_lib.sqlmap.lib.core.common import unArrayizeValue
@@ -17,9 +18,12 @@ from model.Database import Database
 
 
 class Task(object):
-    def __init__(self, taskid, remote_addr, scanUrl, headers, body):
+    def __init__(self, taskid, remote_addr, scanUrl, host, headers, body):
+        self.status = TaskStatus.New
+        self.start_datetime = None
         self.taskid = taskid
         self.scanUrl = scanUrl
+        self.host = host
         self.headers = headers
         self.body = body
         self.remote_addr = remote_addr

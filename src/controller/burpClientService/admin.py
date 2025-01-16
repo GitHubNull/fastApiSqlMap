@@ -1,3 +1,4 @@
+import pdb
 from fastapi import HTTPException
 from fastapi import APIRouter, Depends, Request
 from fastapi import status
@@ -18,16 +19,19 @@ router = APIRouter(prefix="/burpsuite/admin")
 async def add_task(taskAddRequest: TaskAddRequest, request: Request, current_user: dict = Depends(get_current_user)):
     try:
         if request.client:
+            # pdb.set_trace()
             task_dict = taskAddRequest.model_dump()
             if 'options' not in task_dict or task_dict['options'] is None:
                 return BaseResponseMsg(success=False, msg="options is required", code=status.HTTP_400_BAD_REQUEST, data=None)
+            logger.info(f"request.client: {request.client}")
             remote_ip = request.client.host
-            res = await taskService.star_task(remote_addr=remote_ip, scanUrl=taskAddRequest.scanUrl, headers=taskAddRequest.headers, body=taskAddRequest.body, options=taskAddRequest.options)
+            # pdb.set_trace()
+            res = await taskService.star_task(remote_addr=remote_ip, scanUrl=taskAddRequest.scanUrl, host=taskAddRequest.host, headers=taskAddRequest.headers, body=taskAddRequest.body, options=taskAddRequest.options)
             return res
         else:
             remote_ip = None
             logger.warning("request.client is None")
             return BaseResponseMsg(success=False, msg="options is required", code=status.HTTP_400_BAD_REQUEST, data=None)
     except Exception as e:
-        logger.error(f"Error accessing request.client: {e}")
+        logger.error(f"Error: {e}")
         raise HTTPException(status_code=500, detail="Error accessing request.client")

@@ -9,6 +9,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from third_lib.sqlmap.lib.core.data import logger
 
 from controller.chromeService.admin import router as chrome_admin_router
+from controller.burpClientService.admin import router as burp_admin_router
+from config import VERSION
 
 app = FastAPI()
 # 将编译好的 Vue 项目静态文件夹（如dist）放置在FastAPI项目中的static文件夹下
@@ -26,9 +28,18 @@ app.add_middleware(
 )
 
 app.include_router(chrome_admin_router, prefix="/api")
+app.include_router(burp_admin_router, prefix="/api")
 
 
 @app.get("/")
 def read_root():
     logger.debug("root")
     return RedirectResponse(url="/static/index.html")
+
+
+@app.get("/version")
+def get_version():
+    logger.debug("root")
+    return {
+        "version": VERSION
+    }

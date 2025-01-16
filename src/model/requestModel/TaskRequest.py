@@ -26,7 +26,8 @@ class TaskQueryRequest(BaseModel):
 
 class TaskAddRequest(BaseModel):
     scanUrl: Annotated[str, Field(description="扫描地址...")]
-    headers: Annotated[dict, Field(description="请求头...")]
+    host: Annotated[str, Field(description="扫描域名...")]
+    headers: Annotated[list, Field(description="请求头...")]
     body: Annotated[str, Field(description="请求体...")]
     options: Annotated[dict, Field(description="扫描参数...")]
 
