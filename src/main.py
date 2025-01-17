@@ -90,7 +90,7 @@ from model.DataStore import DataStore
 from utils.task_monitor import monitor
 from app import app
 
-FORMATTER = logging.Formatter("\r[%(asctime)s] [%(levelname)s] [%(module)s] [%(filename)s] [Line: %(lineno)d] %(message)s", "%Y-%m-%d %H:%M:%S")
+FORMATTER = logging.Formatter("[%(asctime)s] [%(levelname)s] [%(module)s] [%(filename)s] [Line: %(lineno)d] %(message)s", "%Y-%m-%d %H:%M:%S")
 for handler in logger.handlers:
     handler.setFormatter(FORMATTER)
 
@@ -135,7 +135,7 @@ def main(username, password):
         # scheduler.add_job(monitor, 'interval', seconds=3)  # 每10秒执行一次
         # scheduler.start()
         # logger.info("[*] Scheduler started")
-        uvicorn.run(app=app, host="127.0.0.1", port=8775, reload=False)
+        uvicorn.run(app=app, host="127.0.0.1", port=8775, reload=False, log_config='./uvicorn_config.json')
     except Exception as e:
         print(e)
 

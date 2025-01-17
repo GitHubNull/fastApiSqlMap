@@ -8,15 +8,15 @@ from typing import Annotated, Optional
 
 
 class TaskDeleteRequest(BaseModel):
-    taskid: str
+    taskid: str = Field("", min_length=16, max_length=16, description='任务ID')
 
 
 class TaskStopRequest(BaseModel):
-    taskid: str
+    taskid: str = Field("", min_length=16, max_length=16, description='任务ID')
 
 
 class TaskUpdateRequest(BaseModel):
-    taskid: Annotated[str, Field(min_length=1)]
+    taskid: str = Field("", min_length=16, max_length=16, description='任务ID')
     options: Annotated[dict, Field(min_length=1)]
 
 
@@ -25,7 +25,7 @@ class TaskListRequest(BaseModel):
 
 
 class TaskQueryRequest(BaseModel):
-    taskid: Annotated[Optional[str], Field(description="任务ID，可选参数")]
+    taskid: str = Field("", min_length=16, max_length=16, description='任务ID')
 
 
 class TaskAddRequest(BaseModel):
