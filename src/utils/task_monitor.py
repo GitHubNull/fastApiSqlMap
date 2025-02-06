@@ -1,4 +1,6 @@
+from datetime import datetime, timedelta
 import os
+from model.TaskStatus import TaskStatus
 from third_lib.sqlmap.lib.core.data import logger
 
 import psutil
@@ -47,10 +49,10 @@ def monitor(max_tasks_count=None):
                 local_max_tasks_count = DataStore.max_tasks_count
         else:
             local_max_tasks_count = get_max_tasks_count()
-    # Ensure local_max_tasks_count is always an integer
-    local_max_tasks_count = int(local_max_tasks_count)
+        # Ensure local_max_tasks_count is always an integer
+        local_max_tasks_count = int(local_max_tasks_count)
 
-    DataStore.max_tasks_count = local_max_tasks_count
+        DataStore.max_tasks_count = local_max_tasks_count
     with DataStore.tasks_lock:
         runnable_list = []
         running_task_cnt = 0
@@ -58,3 +60,34 @@ def monitor(max_tasks_count=None):
         for taskid in DataStore.tasks:
             task = DataStore.tasks[taskid]
             task_orin_status = task.status
+
+            if task_orin_status in [TaskStatus.New, TaskStatus.Runnable]:
+                if task_orin_status == TaskStatus.Runnable:
+                    runnable_list.append(task)
+                continue
+            else:
+                tmp_task_status = TaskStatus.Terminated if task.engine_has_terminated() is True else TaskStatus.Running
+                if tmp_task_status == TaskStatus.Running:
+                    running_task_cnt += 1
+                else:
+                    task.status = TaskStatus.Terminated
+
+        if running_task_cnt < local_max_tasks_count:
+            for task in runnable_list:
+                if running_task_cnt >= local_max_tasks_count:
+                    break
+                if task.start_datetime is not None:
+                    if datetime.now() - task.start_datetime >= timedelta(seconds=1):
+                        running_task_cnt += 1
+                        logger.debug(f"monitor -> task_id: {task.options.taskid} task.start_datetime: {task.start_datetime}")
+                        task.engine_start()
+                        task.status = TaskStatus.Running
+                    else:
+                        logger.debug(f"monitor -> task_id: {task.options.taskid} task.start_datetime: {task.start_datetime}")
+                        continue
+                else:
+                    running_task_cnt += 1
+                    logger.debug(f"monitor -> task_id: {task.options.taskid} task.start_datetime: {task.start_datetime}")
+                    task.start_datetime = datetime.now()
+                    task.engine_start()
+                    task.status = TaskStatus.Running

@@ -46,3 +46,7 @@ class TaskFindByBodyKeyWordRequest(BaseModel):
 
 class TaskFindByHeaderKeyWordRequest(BaseModel):
     headerKeyWord: Annotated[str, Field(description="headerKeyWord...")]
+
+
+class TaskLogQueryRequest(BaseModel):
+    taskId: str = Field("", min_length=3, max_length=64, description='任务ID')

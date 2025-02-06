@@ -73,8 +73,8 @@ class Task(object):
         os.close(handle)
         saveConfig(self.options, configFile)
 
-        if os.path.exists("sqlmap.py"):
-            self.process = Popen([sys.executable or "python", "sqlmap.py",
+        if os.path.exists("third_lib/sqlmap/sqlmap.py"):
+            self.process = Popen([sys.executable or "python", "third_lib/sqlmap/sqlmap.py",
                                   "--api",
                                   "-c", configFile], shell=False,
                                  close_fds=not IS_WIN)

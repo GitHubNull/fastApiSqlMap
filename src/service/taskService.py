@@ -297,6 +297,29 @@ class TaskService(object):
                 "count": len(res)
             }
             return BaseResponseMsg(data=data, success=True, msg="success", code=status.HTTP_200_OK)
+        
+    async def find_task_log_by_taskid(self, taskid: str):
+        json_log_messages = list()
+        with DataStore.tasks_lock:
+            if taskid not in DataStore.tasks:
+                return BaseResponseMsg(data=None, success=False, msg=f"task {taskid} does not exist", code=status.HTTP_404_NOT_FOUND)
+
+            if DataStore.current_db is None:
+                logger.error("Database connection is not initialized")
+                return BaseResponseMsg(data=None, msg="Database connection is not initialized", success=False, code=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+            try:
+                cursor = DataStore.current_db.execute("SELECT datetime, level, message FROM logs WHERE taskid = ? ORDER BY id ASC", (taskid,))
+                if cursor is not None:
+                    for detatime_, level, message in cursor:
+                        json_log_messages.append({"datetime": detatime_, "level": level, "message": message})
+                else:
+                    logger.warning(f"No logs found for task {taskid}")
+            except Exception as e:
+                logger.error(f"Error fetching logs for task {taskid}: {e}")
+                return BaseResponseMsg(data=None, msg="Error fetching logs", success=False, code=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+        return BaseResponseMsg(data=json_log_messages, msg="success", success=True, code=status.HTTP_200_OK)
 
 
 taskService = TaskService()

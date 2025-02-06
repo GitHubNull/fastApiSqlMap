@@ -131,10 +131,10 @@ def main(username, password):
         DataStore.current_db.init()
         logger.info("[*] IPC database initialized")
 
-        # scheduler = BackgroundScheduler()
-        # scheduler.add_job(monitor, 'interval', seconds=3)  # 每10秒执行一次
-        # scheduler.start()
-        # logger.info("[*] Scheduler started")
+        scheduler = BackgroundScheduler()
+        scheduler.add_job(monitor, 'interval', seconds=3)  # 每10秒执行一次
+        scheduler.start()
+        logger.info("[*] Scheduler started")
         uvicorn.run(app=app, host="127.0.0.1", port=8775, reload=False, log_config='./uvicorn_config.json')
     except Exception as e:
         print(e)
